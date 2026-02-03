@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="status_pass">#2E7D32</color>
+    <color name="status_pass_bg">#C8E6C9</color>
+    <color name="status_pass_fg">#1B5E20</color>
+
+    <color name="status_fail">#C62828</color>
+    <color name="status_fail_bg">#FFCDD2</color>
+    <color name="status_fail_fg">#B71C1C</color>
+
+    <color name="status_unknown">#6D6D6D</color>
+    <color name="status_unknown_bg">#E0E0E0</color>
+    <color name="status_unknown_fg">#212121</color>
+</resources>

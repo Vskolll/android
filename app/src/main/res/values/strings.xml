@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">MyApplication</string>
+
+    <!-- из нашего UI -->
+    <string name="checkers_title">Checkers</string>
+    <string name="run_checks">Run checks</string>
+</resources>
+
