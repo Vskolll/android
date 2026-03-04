@@ -10,23 +10,48 @@ import com.example.myapplication.checker.IChecker;
 public class DeveloperOptionsChecker implements IChecker {
 
     @Override public String id() { return "dev_options"; }
-    @Override public String title() { return "Developer options"; }
+    @Override public String title() { return "Опции разработчика"; }
 
     @Override
     public CheckerResult run(Context context) {
+        if (context == null) {
+            return CheckerResult.unknown("No context", "Context недоступен — не удалось прочитать DEVELOPMENT_SETTINGS_ENABLED.");
+        }
+
+        int enabled = -1;
+        String source = "";
+
         try {
-            int enabled = Settings.Global.getInt(
+            enabled = Settings.Global.getInt(
                     context.getContentResolver(),
                     Settings.Global.DEVELOPMENT_SETTINGS_ENABLED,
                     0
             );
+            source = "Settings.Global.DEVELOPMENT_SETTINGS_ENABLED";
+        } catch (Throwable ignored) {
+        }
 
-            if (enabled == 1) {
-                return CheckerResult.fail("Enabled", "Опции разработчика включены (risk signal).");
+        if (source.isEmpty()) {
+            try {
+                enabled = Settings.Secure.getInt(
+                        context.getContentResolver(),
+                        Settings.Secure.DEVELOPMENT_SETTINGS_ENABLED,
+                        0
+                );
+                source = "Settings.Secure.DEVELOPMENT_SETTINGS_ENABLED";
+            } catch (Throwable ignored) {
             }
-            return CheckerResult.pass("Disabled", "Опции разработчика выключены.");
-        } catch (Throwable t) {
+        }
+
+        if (source.isEmpty()) {
             return CheckerResult.unknown("No access", "Не удалось прочитать DEVELOPMENT_SETTINGS_ENABLED.");
         }
+
+        String details = "developer_options=" + enabled + "  source=" + source;
+
+        if (enabled == 1) {
+            return CheckerResult.fail("Включено", "Опции разработчика активны.\n\n" + details);
+        }
+        return CheckerResult.pass("Выключено", "Опции разработчика отключены.\n\n" + details);
     }
 }

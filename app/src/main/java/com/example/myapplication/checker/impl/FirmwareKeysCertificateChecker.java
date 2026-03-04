@@ -11,18 +11,21 @@ public class FirmwareKeysCertificateChecker implements IChecker {
 
     @Override public String id() { return "fw_keys"; }
 
-    @Override public String title() { return "Firmware keys / certificate"; }
+    @Override public String title() { return "Ключи прошивки"; }
 
     @Override
     public CheckerResult run(Context context) {
-        String buildTags = Build.TAGS == null ? "" : Build.TAGS;
-        String buildType = Build.TYPE == null ? "" : Build.TYPE;
+        String buildTags = Build.TAGS == null ? "" : Build.TAGS.trim();
+        String buildType = Build.TYPE == null ? "" : Build.TYPE.trim();
 
         String roBuildTags = SystemProp.get("ro.build.tags");
         String roBuildType = SystemProp.get("ro.build.type");
+        String roBuildKeys = SystemProp.get("ro.build.keys");
+        String roBuildFlavor = SystemProp.get("ro.build.flavor");
 
         boolean testKeys = buildTags.contains("test-keys") || roBuildTags.contains("test-keys");
         boolean releaseKeys = buildTags.contains("release-keys") || roBuildTags.contains("release-keys");
+        boolean devKeys = buildTags.contains("dev-keys") || roBuildTags.contains("dev-keys");
 
         boolean nonUser = "userdebug".equalsIgnoreCase(buildType) || "eng".equalsIgnoreCase(buildType)
                 || "userdebug".equalsIgnoreCase(roBuildType) || "eng".equalsIgnoreCase(roBuildType);
@@ -31,24 +34,33 @@ public class FirmwareKeysCertificateChecker implements IChecker {
                 "Build.TAGS=" + buildTags +
                         "\nBuild.TYPE=" + buildType +
                         "\nro.build.tags=" + roBuildTags +
-                        "\nro.build.type=" + roBuildType;
+                        "\nro.build.type=" + roBuildType +
+                        "\nro.build.keys=" + roBuildKeys +
+                        "\nro.build.flavor=" + roBuildFlavor;
 
-        if (testKeys || nonUser) {
+        if (testKeys || devKeys || nonUser) {
             return CheckerResult.fail(
-                    "Non-production firmware keys",
-                    "Обнаружены test-keys и/или тип сборки userdebug/eng — частый признак кастомной/отладочной прошивки.\n\n" + desc
+                    "Не‑прод сборка",
+                    "Обнаружены test/dev‑keys и/или тип сборки userdebug/eng.\n\n" + desc
             );
         }
 
         if (releaseKeys && "user".equalsIgnoreCase(buildType)) {
             return CheckerResult.pass(
-                    "Release keys (user build)",
-                    "Похоже на прод-сборку: release-keys + user.\n\n" + desc
+                    "Release keys",
+                    "Сборка с release‑keys и типом user.\n\n" + desc
+            );
+        }
+
+        if (buildTags.isEmpty() && roBuildTags.isEmpty() && roBuildType.isEmpty()) {
+            return CheckerResult.unknown(
+                    "Нет данных",
+                    "Сигналы ключей/типа сборки недоступны.\n\n" + desc
             );
         }
 
         return CheckerResult.unknown(
-                "Не удалось однозначно классифицировать",
+                "Неоднозначно",
                 "Ключи/тип сборки не дают однозначного вывода.\n\n" + desc
         );
     }

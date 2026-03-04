@@ -1,8 +1,48 @@
 <resources>
-    <string name="app_name">MyApplication</string>
+    <string name="app_name">V7CK9LL CHEKER</string>
 
-    <!-- из нашего UI -->
-    <string name="checkers_title">Checkers</string>
-    <string name="run_checks">Run checks</string>
+    <string name="checkers_title">Проверки</string>
+    <string name="details_title">Детали</string>
+    <string name="open_details">Детали</string>
+    <string name="copy">Копировать</string>
+    <string name="checker_running_title">Running…</string>
+    <string name="checker_running_desc">Запуск проверки…</string>
+    <string name="checker_reason_empty">—</string>
+    <string name="reason_prefix">Причина: %1$s</string>
+    <string name="status_pass">PASS</string>
+    <string name="status_fail">FAIL</string>
+    <string name="status_warn">WARN</string>
+    <string name="status_unknown">UNKNOWN</string>
+    <string name="col_check">Проверка</string>
+    <string name="col_status">Статус</string>
+    <string name="col_reason">Причина</string>
+    <string name="col_details">Детали</string>
+    <string name="filter_all">Все</string>
+    <string name="filter_fail">Fail</string>
+    <string name="filter_warn">Warn</string>
+    <string name="filter_pass">Pass</string>
+
+    <string name="summary_title">Общий итог</string>
+    <string name="summary_clean">Устройство выглядит чистым</string>
+    <string name="summary_risk">Обнаружены критичные риски</string>
+    <string name="summary_warn">Есть подозрительные сигналы</string>
+    <string name="summary_counts">FAIL: %1$d · WARN: %2$d · PASS: %3$d · UNKNOWN: %4$d</string>
+    <string name="open_pubg">Открыть PUBG Mobile</string>
+    <string name="open_pubg_store">Открыть PUBG Mobile</string>
+    <string name="banner_cert_aosp_title">AOSP software attestation root certificate</string>
+    <string name="banner_cert_aosp_subtitle">Software‑аттестация. Цепочка может быть подделана.</string>
+    <string name="banner_cert_hw_title">Hardware‑backed attestation</string>
+    <string name="banner_cert_hw_subtitle">TEE/StrongBox. Доверие высокое.</string>
+    <string name="banner_cert_sw_title">Software attestation</string>
+    <string name="banner_cert_sw_subtitle">Software‑уровень. Доверие ограничено.</string>
+    <string name="banner_unlock_title">Bootloader unlocked</string>
+    <string name="banner_unlock_subtitle">Загрузчик разблокирован.</string>
+    <string name="banner_vb_title">Verified Boot not trusted</string>
+    <string name="banner_vb_subtitle">Verified Boot в состоянии RED/ORANGE.</string>
+    <string name="banner_root_title">Root detected</string>
+    <string name="banner_root_subtitle">Обнаружены признаки root‑доступа.</string>
+    <string name="banner_magisk_title">Magisk detected</string>
+    <string name="banner_magisk_subtitle">Обнаружены признаки Magisk/Zygisk.</string>
+    <string name="banner_tamper_title">Runtime tamper</string>
+    <string name="banner_tamper_subtitle">Обнаружены признаки вмешательства в рантайме.</string>
 </resources>
-

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
@@ -12,6 +12,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication">
 
+        <activity android:name=".ui.CheckerDetailActivity" />
+        <activity android:name=".ui.CodeEntryActivity" />
+
         <activity
             android:name=".ui.CheckersActivity"
             android:exported="true">
@@ -21,6 +24,9 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".MainActivity"/>
+        <!-- Если MainActivity не нужна как лаунчер — пусть будет просто объявлена -->
+        <activity android:name=".MainActivity" />
+
     </application>
+
 </manifest>

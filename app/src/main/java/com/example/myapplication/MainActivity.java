@@ -6,7 +6,7 @@ import android.os.Bundle;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.myapplication.ui.CheckersActivity;
+import com.example.myapplication.ui.CodeEntryActivity;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -14,8 +14,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Сразу открываем экран чекеров
-        startActivity(new Intent(this, CheckersActivity.class));
+        // Сразу открываем экран ввода кода
+        startActivity(new Intent(this, CodeEntryActivity.class));
         finish();
     }
 }

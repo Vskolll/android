@@ -13,7 +13,7 @@ public class MagiskFlagChecker implements IChecker {
 
     @Override public String id() { return "magisk"; }
 
-    @Override public String title() { return "Magisk artifacts"; }
+    @Override public String title() { return "Magisk (артефакты)"; }
 
     @Override
     public CheckerResult run(Context context) {
@@ -26,9 +26,13 @@ public class MagiskFlagChecker implements IChecker {
                 "/sbin/.magisk",
                 "/data/adb/magisk",
                 "/data/adb/modules",
+                "/data/adb/zygisk",
+                "/data/adb/magisk.db",
                 "/init.magisk.rc",
                 "/system/etc/init/magisk.rc",
-                "/cache/magisk.log"
+                "/cache/magisk.log",
+                "/metadata/magisk",
+                "/dev/socket/magiskd"
         };
         String hitPath = firstExisting(paths);
 
@@ -43,14 +47,14 @@ public class MagiskFlagChecker implements IChecker {
                             "\nprocHint=" + magiskInProc;
 
             return CheckerResult.fail(
-                    "Magisk suspected",
-                    "Найдены признаки Magisk (best-effort).\n\n" + details
+                    "Magisk обнаружен",
+                    "Найдены артефакты Magisk.\n\n" + details
             );
         }
 
         return CheckerResult.pass(
-                "No Magisk artifacts",
-                "Явных признаков Magisk не найдено (учти: Magisk Hide/ренейм может маскировать)."
+                "Magisk не обнаружен",
+                "Артефакты Magisk не найдены."
         );
     }
 

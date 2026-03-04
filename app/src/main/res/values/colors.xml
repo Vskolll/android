@@ -1,14 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="status_pass">#2E7D32</color>
-    <color name="status_pass_bg">#C8E6C9</color>
-    <color name="status_pass_fg">#1B5E20</color>
+    <!-- 4-color base: black + blue + white text; green/red for status -->
+    <color name="screen_bg">#0A0A0D</color>
+    <color name="topbar_bg">#0A0A0D</color>
+    <color name="detail_bg">#0A0A0D</color>
 
-    <color name="status_fail">#C62828</color>
-    <color name="status_fail_bg">#FFCDD2</color>
-    <color name="status_fail_fg">#B71C1C</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#FFFFFF</color>
+    <color name="table_header_bg">#DFF4FF</color>
+    <color name="table_header_text">#0B2A33</color>
+    <color name="table_row_bg">#FFFFFF</color>
+    <color name="table_row_stroke">#BFE9FF</color>
+    <color name="table_row_ripple">#14000000</color>
 
-    <color name="status_unknown">#6D6D6D</color>
-    <color name="status_unknown_bg">#E0E0E0</color>
-    <color name="status_unknown_fg">#212121</color>
+    <color name="glass_card_bg">#0F1320</color>
+    <color name="glass_chip_bg">#0A0E1A</color>
+    <color name="glass_chip_item">#0F1424</color>
+    <color name="neon_stroke">#1E3A8A</color>
+    <color name="neon_ripple">#40FFFFFF</color>
+    <color name="neon_glow">#00000000</color>
+    <color name="neon_glow_soft">#00000000</color>
+
+    <color name="accent_neon">#00B7FF</color>
+    <color name="accent_neon_soft">#B8EEFF</color>
+
+    <!-- PASS -->
+    <color name="status_pass_bg">#0B2E1A</color>
+    <color name="status_pass_fg">#2EE86A</color>
+
+    <!-- WARN -->
+    <color name="status_warn_bg">#1B2A4D</color>
+    <color name="status_warn_fg">#5DA0FF</color>
+
+    <!-- FAIL -->
+    <color name="status_fail_bg">#2A0F13</color>
+    <color name="status_fail_fg">#FF3B3B</color>
+
+    <!-- UNKNOWN -->
+    <color name="status_unknown_bg">#0F1320</color>
+    <color name="status_unknown_fg">#5DA0FF</color>
+
+    <!-- overall summary -->
+    <color name="summary_bg">#0F1320</color>
+    <color name="summary_stroke">#1E3A8A</color>
+    <color name="summary_clean">#2EE86A</color>
+    <color name="summary_risk">#FF3B3B</color>
+    <color name="summary_warn">#5DA0FF</color>
+
+    <color name="banner_warn_bg">#0E1B36</color>
+    <color name="banner_warn_stroke">#1E3A8A</color>
+    <color name="banner_warn_fg">#5DA0FF</color>
+
+    <color name="banner_fail_bg">#2A0F13</color>
+    <color name="banner_fail_stroke">#FF3B3B</color>
+    <color name="banner_fail_fg">#FF3B3B</color>
+
+    <color name="banner_ok_bg">#0B2E1A</color>
+    <color name="banner_ok_stroke">#2EE86A</color>
+    <color name="banner_ok_fg">#2EE86A</color>
 </resources>

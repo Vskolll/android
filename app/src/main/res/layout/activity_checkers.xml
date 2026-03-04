@@ -2,30 +2,358 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_screen">
 
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbar"
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:title="@string/checkers_title"/>
+        android:background="@color/topbar_bg">
+
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:title="@string/checkers_title"
+            app:titleTextAppearance="@style/TextAppearance.MyApplication.Toolbar"
+            app:titleTextColor="@color/text_primary"
+            android:background="@drawable/bg_toolbar"/>
+
+        <TextView
+            android:id="@+id/logoV7"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="4dp"
+            android:text="V7"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="@color/text_primary"/>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/summaryCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="6dp"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="2dp"
+            app:cardUseCompatPadding="false"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/neon_stroke"
+            app:cardBackgroundColor="@color/glass_card_bg">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:id="@+id/tvSummaryTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/summary_title"
+                    android:textAppearance="@style/TextAppearance.MyApplication.Subtitle"
+                    android:textColor="@color/text_secondary"/>
+
+                <TextView
+                    android:id="@+id/tvSummaryValue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/summary_warn"
+                    android:textAppearance="@style/TextAppearance.MyApplication.Title"
+                    android:textColor="@color/summary_warn"
+                    android:layout_marginTop="4dp"/>
+
+                <TextView
+                    android:id="@+id/tvSummaryCounts"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/summary_counts"
+                    android:textAppearance="@style/TextAppearance.MyApplication.Subtitle"
+                    android:textColor="@color/text_secondary"
+                    android:layout_marginTop="6dp"/>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/bannerAospCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="8dp"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="2dp"
+            app:cardUseCompatPadding="false"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/banner_warn_stroke"
+            app:cardBackgroundColor="@color/banner_warn_bg"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="12dp"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_status_warn"
+                    app:tint="@color/banner_warn_fg"
+                    android:contentDescription="@null"/>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="10dp">
+
+                    <TextView
+                        android:id="@+id/bannerAospTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/banner_cert_aosp_title"
+                        android:textAppearance="@style/TextAppearance.MyApplication.Title"
+                        android:textColor="@color/banner_warn_fg"/>
+
+                    <TextView
+                        android:id="@+id/bannerAospSubtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/banner_cert_aosp_subtitle"
+                        android:textAppearance="@style/TextAppearance.MyApplication.Subtitle"
+                        android:textColor="@color/banner_warn_fg"
+                        android:layout_marginTop="2dp"/>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/bannerUnlockCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="8dp"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="2dp"
+            app:cardUseCompatPadding="false"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/banner_fail_stroke"
+            app:cardBackgroundColor="@color/banner_fail_bg"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="12dp"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_status_fail"
+                    app:tint="@color/banner_fail_fg"
+                    android:contentDescription="@null"/>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="10dp">
+
+                    <TextView
+                        android:id="@+id/bannerUnlockTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/banner_unlock_title"
+                        android:textAppearance="@style/TextAppearance.MyApplication.Title"
+                        android:textColor="@color/banner_fail_fg"/>
+
+                    <TextView
+                        android:id="@+id/bannerUnlockSubtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/banner_unlock_subtitle"
+                        android:textAppearance="@style/TextAppearance.MyApplication.Subtitle"
+                        android:textColor="@color/banner_fail_fg"
+                        android:layout_marginTop="2dp"/>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/bannerVbCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="8dp"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="2dp"
+            app:cardUseCompatPadding="false"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/banner_fail_stroke"
+            app:cardBackgroundColor="@color/banner_fail_bg"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="12dp"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_status_fail"
+                    app:tint="@color/banner_fail_fg"
+                    android:contentDescription="@null"/>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginStart="10dp">
+
+                    <TextView
+                        android:id="@+id/bannerVbTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/banner_vb_title"
+                        android:textAppearance="@style/TextAppearance.MyApplication.Title"
+                        android:textColor="@color/banner_fail_fg"/>
+
+                    <TextView
+                        android:id="@+id/bannerVbSubtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/banner_vb_subtitle"
+                        android:textAppearance="@style/TextAppearance.MyApplication.Subtitle"
+                        android:textColor="@color/banner_fail_fg"
+                        android:layout_marginTop="2dp"/>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fillViewport="true"
+            android:scrollbars="none"
+            android:background="@color/glass_chip_bg">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipFilter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="6dp"
+                app:singleSelection="true"
+                app:selectionRequired="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipAll"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:chipBackgroundColor="@color/glass_chip_item"
+                    app:chipStrokeColor="@color/neon_stroke"
+                    app:chipStrokeWidth="1dp"
+                    android:textColor="@android:color/white"
+                    android:minHeight="36dp"
+                    android:text="@string/filter_all"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipFail"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:chipBackgroundColor="@color/glass_chip_item"
+                    app:chipStrokeColor="@color/neon_stroke"
+                    app:chipStrokeWidth="1dp"
+                    android:textColor="@android:color/white"
+                    android:minHeight="36dp"
+                    android:text="@string/filter_fail"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipWarn"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:chipBackgroundColor="@color/glass_chip_item"
+                    app:chipStrokeColor="@color/neon_stroke"
+                    app:chipStrokeWidth="1dp"
+                    android:textColor="@android:color/white"
+                    android:minHeight="36dp"
+                    android:text="@string/filter_warn"/>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipPass"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:chipBackgroundColor="@color/glass_chip_item"
+                    app:chipStrokeColor="@color/neon_stroke"
+                    app:chipStrokeWidth="1dp"
+                    android:textColor="@android:color/white"
+                    android:minHeight="36dp"
+                    android:text="@string/filter_pass"/>
+            </com.google.android.material.chip.ChipGroup>
+        </HorizontalScrollView>
+
+        <!-- table header removed for card view -->
+    </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvCheckers"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="16dp"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="84dp"
         android:clipToPadding="false"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabRun"
-        android:layout_width="wrap_content"
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnOpenPubgBottom"
+        style="@style/Widget.Material3.Button"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
+        android:layout_gravity="bottom"
         android:layout_margin="16dp"
-        android:contentDescription="@string/run_checks"
-        app:srcCompat="@android:drawable/ic_media_play"/>
+        android:text="@string/open_pubg_store"
+        android:textAllCaps="false"
+        android:textStyle="bold"
+        android:minWidth="0dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:paddingVertical="14dp"
+        android:textSize="16sp"
+        android:elevation="8dp"
+        android:textColor="@android:color/white"
+        app:backgroundTint="#1D4ED8"
+        app:strokeColor="#60A5FA"
+        app:strokeWidth="2dp"
+        app:cornerRadius="16dp"
+        app:icon="@drawable/ic_chevron_right"
+        app:iconPadding="8dp"
+        app:iconGravity="textStart"
+        app:iconSize="18dp"
+        app:iconTint="@android:color/white"
+        app:rippleColor="@color/neon_ripple"
+        android:minHeight="52dp"
+        android:visibility="visible"
+        android:translationY="-6dp"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

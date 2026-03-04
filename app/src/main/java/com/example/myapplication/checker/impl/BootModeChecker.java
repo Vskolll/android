@@ -10,7 +10,7 @@ public class BootModeChecker implements IChecker {
 
     @Override public String id() { return "boot_mode"; }
 
-    @Override public String title() { return "Boot Mode / Boot Reason"; }
+    @Override public String title() { return "Режим загрузки"; }
 
     @Override
     public CheckerResult run(Context context) {
@@ -23,7 +23,8 @@ public class BootModeChecker implements IChecker {
         String reason = SystemProp.firstNonEmpty(
                 SystemProp.get("ro.boot.bootreason"),
                 SystemProp.get("ro.boot.boot_reason"),
-                SystemProp.get("sys.boot.reason")
+                SystemProp.get("sys.boot.reason"),
+                SystemProp.get("ro.bootreason")
         );
 
         String safeMode = SystemProp.firstNonEmpty(
@@ -37,26 +38,33 @@ public class BootModeChecker implements IChecker {
                         "\nsafemode=" + safeMode;
 
         String bm = (bootmode == null ? "" : bootmode.trim().toLowerCase());
+        String br = (reason == null ? "" : reason.trim().toLowerCase());
 
         if (!bm.isEmpty()) {
             // “плохие” режимы
             if (bm.contains("recovery") || bm.contains("bootloader") || bm.contains("fastboot")) {
                 return CheckerResult.fail(
-                        "Non-normal boot mode",
-                        "bootmode=" + bootmode + " — устройство загружено не в normal режиме.\n\n" + desc
+                        "Нештатный режим",
+                        "bootmode=" + bootmode + ".\n\n" + desc
                 );
             }
             if (bm.contains("safe")) {
                 return CheckerResult.fail(
                         "Safe mode",
-                        "bootmode=" + bootmode + " — safe mode.\n\n" + desc
+                        "bootmode=" + bootmode + ".\n\n" + desc
                 );
             }
             // “хорошие”
-            if (bm.contains("normal") || bm.equals("unknown") == false) {
+            if (bm.contains("normal")) {
                 return CheckerResult.pass(
-                        "Boot mode looks normal",
-                        "bootmode=" + bootmode + "\n\n" + desc
+                        "Нормальный режим",
+                        "bootmode=" + bootmode + ".\n\n" + desc
+                );
+            }
+            if (!bm.equals("unknown")) {
+                return CheckerResult.warn(
+                        "Нестандартный режим",
+                        "bootmode=" + bootmode + ".\n\n" + desc
                 );
             }
         }
@@ -64,21 +72,33 @@ public class BootModeChecker implements IChecker {
         // fallback по safemode
         if (SystemProp.isTrueish(safeMode)) {
             return CheckerResult.fail(
-                    "Safe mode flag",
+                    "Safe mode",
                     "safemode=1/true.\n\n" + desc
             );
         }
 
-        // если хоть bootreason есть — покажем unknown с инфой
-        if ((reason != null && !reason.trim().isEmpty())) {
+        // если хоть bootreason есть — покажем warn с инфой
+        if (!br.isEmpty()) {
+            if (br.contains("recovery") || br.contains("bootloader") || br.contains("fastboot")) {
+                return CheckerResult.fail(
+                        "Нештатная причина",
+                        "bootreason=" + reason + ".\n\n" + desc
+                );
+            }
+            if (br.contains("safe")) {
+                return CheckerResult.fail(
+                        "Safe mode",
+                        "bootreason=" + reason + ".\n\n" + desc
+                );
+            }
             return CheckerResult.unknown(
-                    "Boot mode unclear",
-                    "bootmode пустой/нечитаемый, но есть bootreason.\n\n" + desc
+                    "Режим не определён",
+                    "bootmode пустой, но есть bootreason.\n\n" + desc
             );
         }
 
         return CheckerResult.unknown(
-                "Boot info not available",
+                "Нет данных",
                 "Не удалось прочитать bootmode/bootreason.\n\n" + desc
         );
     }
