@@ -43,6 +43,8 @@
     <string name="banner_root_subtitle">Обнаружены признаки root‑доступа.</string>
     <string name="banner_magisk_title">Magisk detected</string>
     <string name="banner_magisk_subtitle">Обнаружены признаки Magisk/Zygisk.</string>
+    <string name="banner_kernel_title">KErnel detected</string>
+    <string name="banner_kernel_subtitle">Обнаружены признаки KernelSU/SusFS.</string>
     <string name="banner_tamper_title">Runtime tamper</string>
     <string name="banner_tamper_subtitle">Обнаружены признаки вмешательства в рантайме.</string>
 </resources>

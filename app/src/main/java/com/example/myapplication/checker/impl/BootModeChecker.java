@@ -61,6 +61,12 @@ public class BootModeChecker implements IChecker {
                         "bootmode=" + bootmode + ".\n\n" + desc
                 );
             }
+            if (bm.equals("reboot")) {
+                return CheckerResult.pass(
+                        "Обычный режим",
+                        "bootmode=reboot часто встречается как vendor-specific значение на штатно загруженной системе.\n\n" + desc
+                );
+            }
             if (!bm.equals("unknown")) {
                 return CheckerResult.warn(
                         "Нестандартный режим",

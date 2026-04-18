@@ -13,7 +13,32 @@
         android:theme="@style/Theme.MyApplication">
 
         <activity android:name=".ui.CheckerDetailActivity" />
-        <activity android:name=".ui.CodeEntryActivity" />
+        <activity
+            android:name=".ui.CodeEntryActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="api.pro-ver-ka.ru"
+                    android:pathPrefix="/android/activate" />
+                <data
+                    android:scheme="https"
+                    android:host="pro-ver-ka.com"
+                    android:pathPrefix="/android/activate" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="v7ck9ll"
+                    android:host="activate" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".ui.CheckersActivity"

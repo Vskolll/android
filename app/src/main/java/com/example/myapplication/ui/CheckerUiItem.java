@@ -25,6 +25,6 @@ public class CheckerUiItem {
     }
 
     private boolean isCriticalId(String id) {
-        return "root".equals(id) || "magisk_runtime".equals(id);
+        return "root".equals(id) || "magisk_runtime".equals(id) || "kernel".equals(id);
     }
 }

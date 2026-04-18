@@ -42,10 +42,21 @@ public class CheckersActivity extends AppCompatActivity {
     private static final String VB_RED_KEY = "Verified Boot: RED";
     private static final String VB_ORANGE_KEY = "Verified Boot: ORANGE";
     private static final String BOOTLOADER_ID = "bootloader_vb";
+    private static final String KERNEL_ID = "kernel";
+    private static final String MAGISK_RUNTIME_ID = "magisk_runtime";
+    private static final String RUNTIME_TAMPER_ID = "runtime_tamper";
+    private static final long SENSITIVE_RECHECK_MS = 15000L;
     private int scrollOffsetY = 0;
     private static final String PUBG_PACKAGE = "com.tencent.ig";
     private static final String PUBG_MARKET_URL = "market://details?id=" + PUBG_PACKAGE;
     private static final String PUBG_WEB_URL = "https://play.google.com/store/apps/details?id=" + PUBG_PACKAGE;
+    private final Runnable sensitiveRecheck = new Runnable() {
+        @Override
+        public void run() {
+            rerunSensitiveChecks();
+            main.postDelayed(this, SENSITIVE_RECHECK_MS);
+        }
+    };
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -64,6 +75,7 @@ public class CheckersActivity extends AppCompatActivity {
         summaryViews.bindAospBanner(findViewById(R.id.bannerAospCard));
         summaryViews.bindUnlockBanner(findViewById(R.id.bannerUnlockCard));
         summaryViews.bindVbBanner(findViewById(R.id.bannerVbCard));
+        summaryViews.bindKernelBanner(findViewById(R.id.bannerKernelCard));
 
         findViewById(R.id.btnOpenPubgBottom).setOnClickListener(v -> openPubgStore());
         RecyclerView rv = findViewById(R.id.rvCheckers);
@@ -79,6 +91,7 @@ public class CheckersActivity extends AppCompatActivity {
 
         setupFilterChips();
         runAll();
+        main.postDelayed(sensitiveRecheck, SENSITIVE_RECHECK_MS);
     }
 
     private void openPubgStore() {
@@ -165,6 +178,7 @@ public class CheckersActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        main.removeCallbacks(sensitiveRecheck);
         exec.shutdownNow();
         main.removeCallbacksAndMessages(null);
         super.onDestroy();
@@ -176,6 +190,33 @@ public class CheckersActivity extends AppCompatActivity {
         if (!com.example.myapplication.auth.SessionManager.isValid(this)) {
             startActivity(new Intent(this, CodeEntryActivity.class));
             finish();
+            return;
+        }
+        rerunSensitiveChecks();
+    }
+
+    private void rerunSensitiveChecks() {
+        List<IChecker> checkers = CheckerRegistry.all();
+        for (IChecker c : checkers) {
+            String id = c == null ? null : c.id();
+            if (!RUNTIME_TAMPER_ID.equals(id)
+                    && !MAGISK_RUNTIME_ID.equals(id)
+                    && !KERNEL_ID.equals(id)) {
+                continue;
+            }
+            exec.execute(() -> {
+                CheckerResult r;
+                try {
+                    r = c.run(getApplicationContext());
+                } catch (Throwable t) {
+                    r = CheckerResult.unknown("Exception", String.valueOf(t));
+                }
+                CheckerUiItem item = new CheckerUiItem(c.id(), c.title(), r);
+                main.post(() -> {
+                    updateItemById(c.id(), item);
+                    applyFilterAndSort();
+                });
+            });
         }
     }
 
@@ -221,6 +262,7 @@ public class CheckersActivity extends AppCompatActivity {
         MaterialCardView bannerAosp;
         MaterialCardView bannerUnlock;
         MaterialCardView bannerVb;
+        MaterialCardView bannerKernel;
 
         SummaryViews(MaterialCardView card) {
             this.card = card;
@@ -241,6 +283,10 @@ public class CheckersActivity extends AppCompatActivity {
             this.bannerVb = bannerCard;
         }
 
+        void bindKernelBanner(MaterialCardView bannerCard) {
+            this.bannerKernel = bannerCard;
+        }
+
         void update(List<CheckerUiItem> items) {
             int fail = 0, warn = 0, pass = 0, unknown = 0;
             CertFlag certFlag = CertFlag.NONE;
@@ -248,6 +294,7 @@ public class CheckersActivity extends AppCompatActivity {
             String certSha = "";
             boolean unlockFlag = false;
             boolean vbFlag = false;
+            boolean kernelFlag = false;
             for (CheckerUiItem it : items) {
                 CheckerStatus st = it == null ? null : it.status;
                 if (st == CheckerStatus.FAIL) fail++;
@@ -268,6 +315,9 @@ public class CheckersActivity extends AppCompatActivity {
                 if (!vbFlag && it != null && it.reason != null &&
                         (it.reason.contains(VB_RED_KEY) || it.reason.contains(VB_ORANGE_KEY))) {
                     vbFlag = true;
+                }
+                if (!kernelFlag && it != null && KERNEL_ID.equals(it.id) && st == CheckerStatus.FAIL) {
+                    kernelFlag = true;
                 }
             }
 
@@ -301,6 +351,9 @@ public class CheckersActivity extends AppCompatActivity {
             }
             if (bannerVb != null) {
                 bannerVb.setVisibility(vbFlag ? android.view.View.VISIBLE : android.view.View.GONE);
+            }
+            if (bannerKernel != null) {
+                bannerKernel.setVisibility(kernelFlag ? android.view.View.VISIBLE : android.view.View.GONE);
             }
         }
 

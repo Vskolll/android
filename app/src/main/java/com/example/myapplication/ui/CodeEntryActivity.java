@@ -2,6 +2,8 @@ package com.example.myapplication.ui;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -23,35 +25,115 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Locale;
+import java.util.UUID;
 
 public class CodeEntryActivity extends AppCompatActivity {
 
-    private static final String BASE_URL = "https://v7ck9ll-server.onrender.com";
+    private static final String[] BASE_URLS = {
+            "https://api.pro-ver-ka.ru",
+            "https://pro-ver-ka.com"
+    };
     private static final String APP_SECRET = "wefqfqf1f134gref1dw";
+    private static final String DEVICE_PREF = "v7_device";
+    private static final String KEY_FALLBACK_DEVICE_ID = "fallback_device_id";
+
+    private EditText etCode;
+    private MaterialButton btnActivate;
+    private ProgressBar pbActivate;
+    private boolean activationRunning = false;
+    private String lastAutoActivationCode = "";
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_code_entry);
 
-        EditText etCode = findViewById(R.id.etCode);
-        MaterialButton btnActivate = findViewById(R.id.btnActivate);
-        ProgressBar pbActivate = findViewById(R.id.pbActivate);
+        etCode = findViewById(R.id.etCode);
+        btnActivate = findViewById(R.id.btnActivate);
+        pbActivate = findViewById(R.id.pbActivate);
 
         btnActivate.setOnClickListener(v -> {
-            String code = etCode.getText() == null ? "" : etCode.getText().toString().trim();
-            if (code.isEmpty()) {
-                Toast.makeText(this, "Введите код", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            setLoading(btnActivate, pbActivate, true);
-            new VerifyTask(code, getDeviceIdSafe()).execute();
+            String code = etCode.getText() == null ? "" : etCode.getText().toString();
+            verifyCode(code, false);
         });
+
+        handleActivationIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleActivationIntent(intent);
+    }
+
+    private void handleActivationIntent(@Nullable Intent intent) {
+        String code = extractActivationCode(intent);
+        if (code.isEmpty()) return;
+        etCode.setText(code);
+        etCode.setSelection(code.length());
+        if (code.equals(lastAutoActivationCode)) return;
+        lastAutoActivationCode = code;
+        verifyCode(code, true);
+    }
+
+    private String extractActivationCode(@Nullable Intent intent) {
+        if (intent == null || intent.getData() == null) return "";
+        Uri uri = intent.getData();
+        String code = uri.getQueryParameter("code");
+        if (isActivationCode(code)) {
+            return normalizeActivationCode(code);
+        }
+        java.util.List<String> segments = uri.getPathSegments();
+        if (segments != null && !segments.isEmpty()) {
+            String last = segments.get(segments.size() - 1);
+            if (isActivationCode(last)) {
+                return normalizeActivationCode(last);
+            }
+        }
+        return "";
+    }
+
+    private void verifyCode(String code, boolean fromLink) {
+        if (activationRunning) return;
+        String cleanCode = normalizeActivationCode(code);
+        if (cleanCode.isEmpty()) {
+            Toast.makeText(this, "Введите код", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (fromLink) {
+            Toast.makeText(this, "Код получен из ссылки. Активирую...", Toast.LENGTH_SHORT).show();
+        }
+        activationRunning = true;
+        setLoading(btnActivate, pbActivate, true);
+        new VerifyTask(cleanCode, getDeviceIdSafe()).execute();
+    }
+
+    private boolean isActivationCode(@Nullable String code) {
+        String cleanCode = normalizeActivationCode(code);
+        return cleanCode.startsWith("V7-") && cleanCode.length() >= 8;
+    }
+
+    private String normalizeActivationCode(@Nullable String code) {
+        if (code == null) return "";
+        return code.trim().replace(" ", "").toUpperCase(Locale.US);
     }
 
     @SuppressLint("HardwareIds")
     private String getDeviceIdSafe() {
-        return Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        String androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        if (androidId != null && !androidId.trim().isEmpty()) {
+            return androidId.trim();
+        }
+
+        SharedPreferences sp = getSharedPreferences(DEVICE_PREF, MODE_PRIVATE);
+        String fallback = sp.getString(KEY_FALLBACK_DEVICE_ID, "");
+        if (fallback == null || fallback.trim().isEmpty()) {
+            fallback = "install-" + UUID.randomUUID();
+            sp.edit().putString(KEY_FALLBACK_DEVICE_ID, fallback).apply();
+        }
+        return fallback;
     }
 
     private class VerifyTask extends AsyncTask<Void, Void, String> {
@@ -69,8 +151,23 @@ public class CodeEntryActivity extends AppCompatActivity {
 
         @Override
         protected String doInBackground(Void... voids) {
+            String lastResult = "error";
+            for (String baseUrl : BASE_URLS) {
+                String result = requestVerify(baseUrl);
+                if ("ok".equals(result)) {
+                    return result;
+                }
+                lastResult = result;
+                if ("http_error".equals(result) && (httpStatus < 500 || httpStatus >= 600)) {
+                    return result;
+                }
+            }
+            return lastResult;
+        }
+
+        private String requestVerify(String baseUrl) {
             try {
-                URL url = new URL(BASE_URL + "/verify");
+                URL url = new URL(baseUrl + "/verify");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
                 conn.setRequestProperty("Content-Type", "application/json");
@@ -115,8 +212,7 @@ public class CodeEntryActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(String result) {
-            MaterialButton btnActivate = findViewById(R.id.btnActivate);
-            ProgressBar pbActivate = findViewById(R.id.pbActivate);
+            activationRunning = false;
             setLoading(btnActivate, pbActivate, false);
 
             if ("ok".equals(result) && !token.isEmpty()) {
@@ -124,9 +220,15 @@ public class CodeEntryActivity extends AppCompatActivity {
                 startActivity(new Intent(CodeEntryActivity.this, CheckersActivity.class));
                 finish();
             } else if ("http_error".equals(result)) {
-                if (httpStatus == 401) {
+                if (httpStatus == 400 && errorMessage.contains("invalid_code")) {
                     Toast.makeText(CodeEntryActivity.this, "Код неверен или истёк", Toast.LENGTH_SHORT).show();
-                } else if (httpStatus == 403) {
+                } else if (httpStatus == 400 && errorMessage.contains("code_expired")) {
+                    Toast.makeText(CodeEntryActivity.this, "Код истёк. Получите новый код", Toast.LENGTH_SHORT).show();
+                } else if (httpStatus == 400 && errorMessage.contains("code_used")) {
+                    Toast.makeText(CodeEntryActivity.this, "Код уже использован на другом устройстве", Toast.LENGTH_SHORT).show();
+                } else if (httpStatus == 400 && errorMessage.contains("invalid_device")) {
+                    Toast.makeText(CodeEntryActivity.this, "Ошибка устройства. Перезапустите приложение", Toast.LENGTH_SHORT).show();
+                } else if (httpStatus == 401 || httpStatus == 403) {
                     Toast.makeText(CodeEntryActivity.this, "Доступ запрещён (неверный ключ приложения)", Toast.LENGTH_SHORT).show();
                 } else if (httpStatus == 429) {
                     Toast.makeText(CodeEntryActivity.this, "Слишком много попыток. Подождите минуту", Toast.LENGTH_SHORT).show();

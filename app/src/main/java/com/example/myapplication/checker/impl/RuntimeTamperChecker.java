@@ -1,6 +1,12 @@
 package com.example.myapplication.checker.impl;
 
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.InstallSourceInfo;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.Signature;
+import android.os.Build;
 import android.os.Debug;
 
 import com.example.myapplication.checker.CheckerResult;
@@ -12,6 +18,7 @@ import com.example.myapplication.checker.util.SystemProp;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -28,34 +35,54 @@ public class RuntimeTamperChecker implements IChecker {
         List<String> details = new ArrayList<>();
 
         // 1) Debugger
-        boolean dbg = Debug.isDebuggerConnected() || Debug.waitingForDebugger();
+        boolean dbg = isDebuggerAttached();
+        boolean dbgRepeat = isDebuggerAttached();
         details.add("debugger=" + dbg);
-        if (dbg) hits.add("debugger");
+        details.add("debugger_repeat=" + dbgRepeat);
+        if (dbg || dbgRepeat) hits.add("debugger");
+        if (dbg != dbgRepeat) hits.add("debugger-flap");
 
         // 1.1) TracerPid (ptrace/debugger)
         int tracerPid = readTracerPid();
+        int tracerPidRepeat = readTracerPid();
         details.add("tracerPid=" + tracerPid);
-        if (tracerPid > 0) hits.add("tracerpid");
+        details.add("tracerPid_repeat=" + tracerPidRepeat);
+        if (tracerPid > 0 || tracerPidRepeat > 0) hits.add("tracerpid");
+        if (tracerPid != tracerPidRepeat) hits.add("tracerpid-flap");
 
         // 2) Frida gadget / gum / substrings в memory maps (best-effort)
         boolean fridaInMaps = ProcScan.selfMapsContains(
                 "frida", "gum-js-loop", "libfrida", "gadget", "frida-gadget", "libfrida-gadget"
         );
+        boolean fridaInMapsRepeat = ProcScan.selfMapsContains(
+                "frida", "gum-js-loop", "libfrida", "gadget", "frida-gadget", "libfrida-gadget"
+        );
         details.add("maps(frida/gum/gadget)=" + fridaInMaps);
-        if (fridaInMaps) hits.add("frida-maps");
+        details.add("maps_repeat(frida/gum/gadget)=" + fridaInMapsRepeat);
+        if (fridaInMaps || fridaInMapsRepeat) hits.add("frida-maps");
+        if (fridaInMaps != fridaInMapsRepeat) hits.add("frida-maps-flap");
 
         // 2.1) Xposed/LSPosed/Riru/Zygisk сигнатуры в maps (best-effort)
         boolean hookInMaps = ProcScan.selfMapsContains(
                 "xposed", "lsposed", "edxp", "riru", "zygisk", "magisk", "substrate",
                 "substrate-loader", "libsubstrate", "frida-agent"
         );
+        boolean hookInMapsRepeat = ProcScan.selfMapsContains(
+                "xposed", "lsposed", "edxp", "riru", "zygisk", "magisk", "substrate",
+                "substrate-loader", "libsubstrate", "frida-agent"
+        );
         details.add("maps(hooks/zygisk/riru)=" + hookInMaps);
-        if (hookInMaps) hits.add("hook-maps");
+        details.add("maps_repeat(hooks/zygisk/riru)=" + hookInMapsRepeat);
+        if (hookInMaps || hookInMapsRepeat) hits.add("hook-maps");
+        if (hookInMaps != hookInMapsRepeat) hits.add("hook-maps-flap");
 
         // 3) Frida-server порты (часто 27042/27043) — best-effort
         boolean fridaPort = LocalPort.isOpen(27042, 120) || LocalPort.isOpen(27043, 120);
+        boolean fridaPortRepeat = LocalPort.isOpen(27042, 120) || LocalPort.isOpen(27043, 120);
         details.add("port(27042/27043)=" + fridaPort);
-        if (fridaPort) hits.add("frida-port");
+        details.add("port_repeat(27042/27043)=" + fridaPortRepeat);
+        if (fridaPort || fridaPortRepeat) hits.add("frida-port");
+        if (fridaPort != fridaPortRepeat) hits.add("frida-port-flap");
 
         // 4) Xposed/LSPosed классы — best-effort
         boolean hookClasses = classExists("de.robv.android.xposed.XposedBridge")
@@ -68,8 +95,12 @@ public class RuntimeTamperChecker implements IChecker {
         // 5) suspicious unix sockets (best-effort)
         boolean sockHit = ProcScan.fileContains("/proc/net/unix",
                 "frida", "gum", "xposed", "lsposed", "zygisk", "magisk", "magiskd", "substrate");
+        boolean sockHitRepeat = ProcScan.fileContains("/proc/net/unix",
+                "frida", "gum", "xposed", "lsposed", "zygisk", "magisk", "magiskd", "substrate");
         details.add("unix_sockets(suspicious)=" + sockHit);
-        if (sockHit) hits.add("socket-suspicious");
+        details.add("unix_sockets_repeat(suspicious)=" + sockHitRepeat);
+        if (sockHit || sockHitRepeat) hits.add("socket-suspicious");
+        if (sockHit != sockHitRepeat) hits.add("socket-flap");
 
         // 5.1) magisk-related system properties (best-effort)
         List<String> magiskProps = readMagiskProps();
@@ -85,13 +116,22 @@ public class RuntimeTamperChecker implements IChecker {
                 "frida", "gadget", "xposed", "lsposed", "zygisk", "magisk", "magiskd",
                 "substrate", "riru", "edxp"
         );
+        boolean procHitRepeat = scanProcCmdlines(
+                "frida", "gadget", "xposed", "lsposed", "zygisk", "magisk", "magiskd",
+                "substrate", "riru", "edxp"
+        );
         details.add("proc_cmdline(suspicious)=" + procHit);
-        if (procHit) hits.add("proc-suspicious");
+        details.add("proc_cmdline_repeat(suspicious)=" + procHitRepeat);
+        if (procHit || procHitRepeat) hits.add("proc-suspicious");
+        if (procHit != procHitRepeat) hits.add("proc-flap");
 
         // 6.1) suspicious TCP ports in /proc/net/tcp (best-effort)
         boolean tcpHit = scanTcpPorts(27042, 27043, 23946, 23947);
+        boolean tcpHitRepeat = scanTcpPorts(27042, 27043, 23946, 23947);
         details.add("tcp_ports(suspicious)=" + tcpHit);
-        if (tcpHit) hits.add("tcp-ports");
+        details.add("tcp_ports_repeat(suspicious)=" + tcpHitRepeat);
+        if (tcpHit || tcpHitRepeat) hits.add("tcp-ports");
+        if (tcpHit != tcpHitRepeat) hits.add("tcp-flap");
 
         // 5) Zygisk/Riru props (best-effort)
         boolean zygiskProp = ProcScan.fileContains("/proc/self/mounts", "zygisk");
@@ -110,8 +150,25 @@ public class RuntimeTamperChecker implements IChecker {
         details.add("maps(extra-libs)=" + extraLibs);
         if (extraLibs) hits.add("extra-libs");
 
+        List<String> stackHits = readSuspiciousStackTraces();
+        details.add("stack_trace_hits=" + (stackHits.isEmpty() ? "none" : join(stackHits, ", ")));
+        if (!stackHits.isEmpty()) hits.add("stack-trace");
+
+        SelfIntegrity integrity = inspectSelfIntegrity(context);
+        details.add("self_integrity=" + integrity.summary);
+        if (integrity.suspicious) hits.add("self-integrity");
+
+        List<String> classLoaderHits = readClassLoaderHits(context);
+        details.add("classloader_hits=" + (classLoaderHits.isEmpty() ? "none" : join(classLoaderHits, ", ")));
+        if (!classLoaderHits.isEmpty()) hits.add("classloader");
+
         if (!hits.isEmpty()) {
-            boolean strong = dbg || tracerPid > 0 || fridaInMaps || fridaPort;
+            boolean strong = dbg || dbgRepeat
+                    || tracerPid > 0 || tracerPidRepeat > 0
+                    || fridaInMaps || fridaInMapsRepeat
+                    || fridaPort || fridaPortRepeat
+                    || integrity.highRisk
+                    || !classLoaderHits.isEmpty();
             boolean fail = strong && hits.size() >= 2;
             String title = fail ? "Обнаружено вмешательство" : "Подозрительные сигналы";
             StringBuilder body = new StringBuilder();
@@ -131,6 +188,10 @@ public class RuntimeTamperChecker implements IChecker {
                 "Явных признаков дебаггера/хуков не найдено.\n\nСигналы:\n• "
                         + join(details, "\n• ")
         );
+    }
+
+    private boolean isDebuggerAttached() {
+        return Debug.isDebuggerConnected() || Debug.waitingForDebugger();
     }
 
     private boolean classExists(String name) {
@@ -178,6 +239,263 @@ public class RuntimeTamperChecker implements IChecker {
             }
         }
         return out;
+    }
+
+    private List<String> readSuspiciousStackTraces() {
+        List<String> hits = new ArrayList<>();
+        try {
+            StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+            for (StackTraceElement el : stack) {
+                if (el == null) continue;
+                String line = (el.getClassName() + "." + el.getMethodName()).toLowerCase(Locale.US);
+                if (line.contains("xposed")
+                        || line.contains("lsposed")
+                        || line.contains("edxp")
+                        || line.contains("frida")) {
+                    hits.add(el.getClassName());
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return hits;
+    }
+
+    private SelfIntegrity inspectSelfIntegrity(Context context) {
+        List<String> findings = new ArrayList<>();
+        boolean suspicious = false;
+        boolean highRisk = false;
+
+        if (context == null) {
+            return new SelfIntegrity("no-context", false, false);
+        }
+
+        try {
+            ApplicationInfo ai = context.getApplicationInfo();
+            String packageCodePath = context.getPackageCodePath();
+            String sourceDir = ai == null ? "" : safe(ai.sourceDir);
+            findings.add("packageCodePath=" + safe(packageCodePath));
+            findings.add("sourceDir=" + sourceDir);
+            if (!safe(packageCodePath).equals(sourceDir)) {
+                suspicious = true;
+                findings.add("codePathMismatch=true");
+            }
+            if (sourceDir.contains("/data/local/tmp") || sourceDir.contains("/storage/")) {
+                suspicious = true;
+                highRisk = true;
+                findings.add("unexpectedInstallPath=true");
+            }
+            if (sourceDir.contains("/virtual/")
+                    || sourceDir.contains("/parallel/")
+                    || sourceDir.contains("/container/")) {
+                suspicious = true;
+                highRisk = true;
+                findings.add("virtualizedInstallPath=true");
+            }
+            if (ai != null && ai.splitSourceDirs != null && ai.splitSourceDirs.length > 0) {
+                findings.add("splitCount=" + ai.splitSourceDirs.length);
+                for (String split : ai.splitSourceDirs) {
+                    String safeSplit = safe(split);
+                    if (safeSplit.contains("/data/local/tmp")
+                            || safeSplit.contains("/storage/")
+                            || safeSplit.contains("/virtual/")
+                            || safeSplit.contains("/parallel/")) {
+                        suspicious = true;
+                        findings.add("suspiciousSplit=" + safeSplit);
+                    }
+                }
+            }
+            String nativeLibDir = ai == null ? "" : safe(ai.nativeLibraryDir);
+            findings.add("nativeLibraryDir=" + nativeLibDir);
+            if (nativeLibDir.contains("/data/local/tmp")
+                    || nativeLibDir.contains("/storage/")
+                    || nativeLibDir.contains("/virtual/")
+                    || nativeLibDir.contains("/parallel/")) {
+                suspicious = true;
+                highRisk = true;
+                findings.add("unexpectedNativeLibDir=true");
+            }
+        } catch (Throwable t) {
+            findings.add("pathError=" + t.getClass().getSimpleName());
+        }
+
+        String installer = readInstaller(context);
+        findings.add("installer=" + installer);
+        if (installer.isEmpty() || "adb".equals(installer) || "unknown".equals(installer)) {
+            suspicious = true;
+            findings.add("installerSuspicious=true");
+        }
+        if (installer.contains("vmos")
+                || installer.contains("virtual")
+                || installer.contains("parallel")
+                || installer.contains("dual")
+                || installer.contains("clone")) {
+            suspicious = true;
+            highRisk = true;
+            findings.add("installerVirtualized=true");
+        }
+
+        SignatureInfo sig = readSignatureInfo(context);
+        findings.add(sig.summary);
+        if (sig.suspicious) {
+            suspicious = true;
+        }
+        if (sig.highRisk) {
+            highRisk = true;
+        }
+
+        return new SelfIntegrity(join(findings, "; "), suspicious, highRisk);
+    }
+
+    private List<String> readClassLoaderHits(Context context) {
+        List<String> hits = new ArrayList<>();
+        try {
+            ClassLoader self = RuntimeTamperChecker.class.getClassLoader();
+            String selfLoader = self == null ? "null" : self.getClass().getName();
+            if (isSuspiciousClassLoader(selfLoader)) {
+                hits.add("self=" + selfLoader);
+            }
+        } catch (Throwable ignored) {
+        }
+
+        if (context == null) {
+            return hits;
+        }
+
+        try {
+            ClassLoader app = context.getClassLoader();
+            String appLoader = app == null ? "null" : app.getClass().getName();
+            if (isSuspiciousClassLoader(appLoader)) {
+                hits.add("app=" + appLoader);
+            }
+        } catch (Throwable ignored) {
+        }
+
+        try {
+            ClassLoader system = ClassLoader.getSystemClassLoader();
+            String sysLoader = system == null ? "null" : system.getClass().getName();
+            if (isSuspiciousClassLoader(sysLoader)) {
+                hits.add("system=" + sysLoader);
+            }
+        } catch (Throwable ignored) {
+        }
+        return hits;
+    }
+
+    private boolean isSuspiciousClassLoader(String className) {
+        if (className == null || className.trim().isEmpty()) {
+            return false;
+        }
+        String lower = className.toLowerCase(Locale.US);
+        return lower.contains("xposed")
+                || lower.contains("lsposed")
+                || lower.contains("edxp")
+                || lower.contains("frida")
+                || lower.contains("sandhook")
+                || lower.contains("epic")
+                || lower.contains("substrate")
+                || lower.contains("vmos")
+                || lower.contains("parallel")
+                || lower.contains("virtual");
+    }
+
+    private String readInstaller(Context context) {
+        if (context == null) return "unknown";
+        try {
+            PackageManager pm = context.getPackageManager();
+            String pkg = context.getPackageName();
+            if (pm == null || pkg == null) return "unknown";
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                InstallSourceInfo info = pm.getInstallSourceInfo(pkg);
+                String installer = info == null ? "" : safe(info.getInstallingPackageName());
+                return installer.isEmpty() ? "adb" : installer;
+            }
+            String installer = pm.getInstallerPackageName(pkg);
+            return installer == null || installer.trim().isEmpty() ? "adb" : installer.trim();
+        } catch (Throwable ignored) {
+            return "unknown";
+        }
+    }
+
+    private SignatureInfo readSignatureInfo(Context context) {
+        if (context == null) return new SignatureInfo("signatures=unknown", false, false);
+        try {
+            PackageManager pm = context.getPackageManager();
+            if (pm == null) return new SignatureInfo("signatures=pm-null", false, false);
+
+            PackageInfo pi;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                pi = pm.getPackageInfo(context.getPackageName(), PackageManager.GET_SIGNING_CERTIFICATES);
+                if (pi.signingInfo == null) {
+                    return new SignatureInfo("signatures=none", true, false);
+                }
+                Signature[] signers = pi.signingInfo.getApkContentsSigners();
+                return summarizeSignatures(signers);
+            }
+            pi = pm.getPackageInfo(context.getPackageName(), PackageManager.GET_SIGNATURES);
+            return summarizeSignatures(pi.signatures);
+        } catch (Throwable t) {
+            return new SignatureInfo("signaturesError=" + t.getClass().getSimpleName(), false, false);
+        }
+    }
+
+    private SignatureInfo summarizeSignatures(Signature[] signatures) {
+        if (signatures == null || signatures.length == 0) {
+            return new SignatureInfo("signatures=none", true, false);
+        }
+        List<String> digests = new ArrayList<>();
+        boolean suspicious = signatures.length > 1;
+        boolean highRisk = false;
+        for (Signature s : signatures) {
+            String sha = sha256(s == null ? null : s.toByteArray());
+            if (!sha.isEmpty()) digests.add(sha);
+        }
+        String joined = digests.isEmpty() ? "none" : join(digests, ",");
+        if (joined.contains("NONE")) suspicious = true;
+        return new SignatureInfo("signatureCount=" + signatures.length + "; signatureSha256=" + joined, suspicious, highRisk);
+    }
+
+    private String sha256(byte[] data) {
+        if (data == null || data.length == 0) return "";
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(data);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < digest.length; i++) {
+                if (i > 0) sb.append(':');
+                sb.append(String.format(Locale.US, "%02X", digest[i]));
+            }
+            return sb.toString();
+        } catch (Throwable ignored) {
+            return "";
+        }
+    }
+
+    private String safe(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private static final class SelfIntegrity {
+        final String summary;
+        final boolean suspicious;
+        final boolean highRisk;
+
+        SelfIntegrity(String summary, boolean suspicious, boolean highRisk) {
+            this.summary = summary == null ? "" : summary;
+            this.suspicious = suspicious;
+            this.highRisk = highRisk;
+        }
+    }
+
+    private static final class SignatureInfo {
+        final String summary;
+        final boolean suspicious;
+        final boolean highRisk;
+
+        SignatureInfo(String summary, boolean suspicious, boolean highRisk) {
+            this.summary = summary == null ? "" : summary;
+            this.suspicious = suspicious;
+            this.highRisk = highRisk;
+        }
     }
 
     private boolean scanProcCmdlines(String... needles) {

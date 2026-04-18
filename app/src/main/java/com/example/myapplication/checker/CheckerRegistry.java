@@ -11,6 +11,7 @@ import com.example.myapplication.checker.impl.DeveloperOptionsChecker;
 import com.example.myapplication.checker.impl.EmulatorChecker;
 import com.example.myapplication.checker.impl.FirmwareIntegrityChecker;
 import com.example.myapplication.checker.impl.FirmwareKeysCertificateChecker;
+import com.example.myapplication.checker.impl.KernelChecker;
 import com.example.myapplication.checker.impl.MagiskFlagChecker;
 import com.example.myapplication.checker.impl.MagiskRuntimeChecker;
 import com.example.myapplication.checker.impl.RootChecker;
@@ -34,6 +35,7 @@ public final class CheckerRegistry {
         list.add(new FirmwareIntegrityChecker());
         list.add(new FirmwareKeysCertificateChecker());
         list.add(new RootChecker());
+        list.add(new KernelChecker());
         list.add(new MagiskFlagChecker());
         list.add(new MagiskRuntimeChecker());
         list.add(new AdbEnabledChecker());
